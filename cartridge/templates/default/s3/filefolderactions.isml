@@ -1,0 +1,17 @@
+<!--- TEMPLATENAME: filefolderactions.isml --->
+<form action="${URLUtils.url('S3-ObjectAction')}" method="GET">
+	<input type="hidden" name="bucket" value="${pdict.bucket}"></input>
+	<input type="hidden" name="path" value="${pdict.path}"></input>
+	<isif condition="${pdict.path != null && pdict.path.length > 0}">
+			<div id="actionPanelAddFolder">
+				<div class="formLabel">Create Folder</div>
+				<input type="text" placeholder="folder name" name="folder"></input><input type="submit" name="objectaction" value="Add" onClick="return confirm('Are you sure you want to create the folder?');"></input>
+				</form>
+			</div>
+			<div id="actionPanelUploadFile">
+				<div class="formLabel">Upload File</div>
+				<input type="file" placeholder="select file" name="file"></input><input type="submit" name="objectaction" value="Upload" onClick="return confirm('Are you sure you want to upload the file?');"></input>
+				</form>
+			</div>		
+	</isif>
+</form>

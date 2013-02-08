@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<extensions xmlns="http://www.demandware.com/xml/bmmodules/2007-12-11" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.demandware.com/xml/bmmodules/2007-12-11 bmext.xsd">
+
+<menuaction id="s3contentmanagement" menupath="content" position="999" site="true">
+  <name xml:lang="x-default">AWS S3 Content Assets</name>
+  <short_description xml:lang="x-default">
+	  Click here to create and edit content assets stored on AWS S3 servers.
+  </short_description>
+  <description xml:lang="x-default">
+	  Click here to create and edit content assets stored on AWS S3 cloud servers.
+  </description>
+  <exec pipeline="S3" node="Show"/>
+  <sub-pipelines>
+     <pipeline name="S3-Show" />
+     <pipeline name="S3-AddBucket" />
+     <pipeline name="S3-BucketInfo" />
+     <pipeline name="S3-ObjectAction" />
+  </sub-pipelines>
+  <parameters> 
+  </parameters>
+  <icon>icons/aws_singlebox.png</icon>
+</menuaction> 
+
+</extensions>

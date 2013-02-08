@@ -1,0 +1,17 @@
+<!--- TEMPLATENAME: bucketinfo.isml --->
+<form action="${URLUtils.url('S3-BucketInfo')}" method="GET">
+	<input type="hidden" name="bucket" value="${pdict.bucket}"></input>
+	<div id="bucketInfo">
+		<div class="bucketName" style="line-height:25px;">${pdict.bucket}</div>
+		<div class="bucketSettings">
+			<isscript>
+				importScript("aws.ds");
+				var versioningOn = getBucketVersioning(pdict.bucket);
+			</isscript>		
+			<div id="versioning">Versioning: <input name="versioning" value="on" <isif condition="${versioningOn}">checked</isif> type="radio">On <input name="versioning" value="off" <isif condition="${!versioningOn}">checked</isif> type="radio">Off </div>
+		</div>		
+		<input type="submit" name="bucketaction" value="Save" onClick="return confirm('Are you sure you want to save the bucket settings?');"></input>	
+	</div>
+</form>
+
+<isinclude template="s3/filefolderactions">

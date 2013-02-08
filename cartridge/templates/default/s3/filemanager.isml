@@ -1,0 +1,91 @@
+<!--- TEMPLATENAME: filemanager.isml --->
+<isdecorate template="application/MenuFrame">
+
+<link rel="stylesheet" type="text/css" href="${URLUtils.staticURL('/css/aws.css')}">
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
+
+<isscript>
+	importScript("aws.ds");
+</isscript>
+ 
+<isif condition="${pdict.error != null && pdict.error.length > 0}">
+<div class="errorMessage">
+${pdict.error}
+</div>
+</isif> 
+
+
+	<div id="bucketList">	
+		<isloop items="${getBuckets()}" alias="bucket">
+			<div class="bucket">
+				<div class="bucketName"><a href="${URLUtils.url('S3-Show','bucket',bucket)}">${bucket}</a></div>
+				<isif condition="${pdict.bucket != null && pdict.bucket == bucket}">
+					<div class="bucketFiles">					
+						<isscript>
+						importScript("aws.ds");
+						var folder : Array = new Array();
+						</isscript>
+						<isloop items="${getBucket(pdict.bucket, '/')}" alias="file">
+							<isscript>							
+								function printAWSObj(folder : dw.util.ArrayList) {									
+									for each(thing in folder) {
+										if(thing.isFolder) {
+											out.print("<div class=\"folder\"><div class=\"name\"><a href=\"javascript:void();\">" + thing.name + "</a></div><div style=\"display:none;\" class=\"contents\">");
+											printAWSObj(thing.children);
+											out.print("</div></div>");
+										} else {
+											out.print("<div class=\"file\"><div class=\"name\"><a href=\"javascript:showFileInfo('" + thing.name + "');\">" + thing.name + "</a></div></div>");
+										}										
+									}
+								}
+
+								if(file.isFolder) {
+									out.print("<div class=\"folder\"><div class=\"name\"><a href=\"javascript:void();\">" + file.name + "</a></div><div style=\"display:none;\" class=\"contents\">");
+									printAWSObj(file.children);
+									out.print("</div></div>");
+								} else {
+									out.print("<div class=\"file\"><div class=\"name\"><a href=\"javascript:showFileInfo('" + file.name + "');\">" + file.name + "</a></div></div>");
+								}
+
+							</isscript>
+						</isloop>
+						
+						<script type="text/javascript">
+							$(function() {
+								$("div.folder div.name a").click(function() {
+									if($(this).parent().siblings("div.contents").is(":visible"))
+										$(this).parent().siblings("div.contents").hide();
+									else
+										$(this).parent().siblings("div.contents").show();
+								});
+
+								showBucketInfo('${pdict.bucket}');								
+							});
+
+							function showBucketInfo(bucketPath) {															
+								$.ajax({									
+									  url: "${URLUtils.url('S3-BucketInfo')}" + "?bucket=" + escape(bucketPath)
+									}).done(function (data) {										
+									  $("#actionPanelContent").html(data);
+									  $("#actionPanelContent").show();
+									});
+							}
+						</script>
+					</div>
+				</isif>
+			</div>
+		</isloop>
+	</div>
+	<div id="actionPanel">
+		<div style="background-color:#FAFAFA;position:absolute;width:100%;height:25px;z-index:0;"> </div>
+		<div id="actionPanelContent" style="display:none;"></div>
+		<form action="${URLUtils.url("S3-AddBucket")}" method="GET">
+		<div id="actionPanelAddBucket">
+			<div class="formLabel">Add Bucket</div>
+			<input type="text" placeholder="bucket name" name="newbucket"></input><input type="submit" name="bucketaction" value="Add" onClick="return confirm('Are you sure you want to create the bucket?');"></input>
+			</form>
+		</div>
+	</div>
+
+
+</isdecorate>

@@ -1,0 +1,57 @@
+@charset "UTF-8";
+/* CSS Document */
+
+.bucketFiles {
+	padding-left: 20px;
+}
+
+.folder {
+	padding-left:20px;
+	background-image:url(../icons/folder.png);
+	background-repeat:no-repeat;
+}
+
+.file {
+	padding-left:20px;
+	background-image:url(../icons/document.png);
+	background-repeat:no-repeat;	
+}
+
+.bucketName {
+	padding-left:20px;
+	background-image:url(../icons/data_copy.png);
+	background-repeat:no-repeat;	
+} 
+
+#bucketList {
+	float:left;
+}
+
+#actionPanel {
+	position:relative;
+	border:solid 1px gray;
+	background-color:#efefef;
+	float:right;
+	height:100%;
+	width:450px;
+}
+
+#actionPanelContent {
+	position:relative;
+	z-index:1;
+	padding:5px;
+}
+
+.errorMessage {
+	background-color:#FF99A0;
+	color:#D62432;
+	border:solid 1px #D62432;
+	margin-bottom:20px;
+	padding:10px;
+	font-weight:bold;
+}
+
+#actionPanelAddBucket {
+	background-color:#FAFAFA;
+	padding:5px;
+}

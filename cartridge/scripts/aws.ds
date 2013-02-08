@@ -1,0 +1,181 @@
+importPackage( dw.system );
+
+
+function removeDefaultNamespaceFromXML(xmlString)
+{
+    var xmlnsPattern:RegExp = 
+        new RegExp("xmlns=[^\"]*\"[^\"]*\"", "gi");
+
+    var cleanXMLString:String = xmlString.replace(xmlnsPattern, "");
+
+    return new XML(cleanXMLString);
+}
+
+function strEndsWith(str,suffix) {
+    if (str[str.length - 1] == suffix) return true;
+    return false;
+}
+
+function getBuckets() {	
+	importScript("hmacsha1.ds");
+	
+	var httpClient : dw.net.HTTPClient = new dw.net.HTTPClient();
+	var d=new Date();
+	var n=d.toUTCString();
+	var auth : String =  "AWS " + dw.system.Site.current.preferences.custom.aws_s3_accesskeyid + ":" + b64_hmac_sha1(dw.system.Site.current.preferences.custom.aws_s3_secretaccesskey, "GET\n\n\n" + n +"\n/");
+	httpClient.setRequestHeader('Authorization', auth);
+	httpClient.setRequestHeader('Date', n);
+	httpClient.open('GET', 's3.amazonaws.com');
+	httpClient.send();
+
+	var retBuckets : dw.util.ArrayList = new dw.util.ArrayList(); 
+  	var awsResp : XML =  new XML(removeDefaultNamespaceFromXML(httpClient.text));
+  	var buckets = awsResp.Buckets;
+  	
+  	if (buckets) {
+      	for (var i = 0; i < buckets.Bucket.length(); i++) {
+        	var bucket = buckets.Bucket[i];
+        	retBuckets.add(bucket.Name);
+      	}
+  	}
+  	
+  	return retBuckets;
+}
+
+function getBucketVersioning(bucketName) {
+	importScript("hmacsha1.ds");
+	
+	var httpClient : dw.net.HTTPClient = new dw.net.HTTPClient();
+	var d=new Date();
+	var n=d.toUTCString();
+	var auth : String =  "AWS " + dw.system.Site.current.preferences.custom.aws_s3_accesskeyid + ":" + b64_hmac_sha1(dw.system.Site.current.preferences.custom.aws_s3_secretaccesskey, "GET\n\n\n" + n +"\n/" + bucketName + "/?versioning");
+	httpClient.setRequestHeader('Authorization', auth);
+	httpClient.setRequestHeader('Date', n);
+	httpClient.open('GET', bucketName + '.s3.amazonaws.com?versioning');
+	httpClient.send();
+
+  	var awsResp : XML =  new XML(removeDefaultNamespaceFromXML(httpClient.text));
+  	var status = awsResp.Status;
+
+  	return status == "Enabled";
+}
+
+function setBucketVersioning(bucketName, allowVersioning) {
+	importScript("hmacsha1.ds");
+	
+	var httpClient : dw.net.HTTPClient = new dw.net.HTTPClient();	
+	var d=new Date();
+	var n=d.toUTCString();
+	var auth : String =  "AWS " + dw.system.Site.current.preferences.custom.aws_s3_accesskeyid + ":" + b64_hmac_sha1(dw.system.Site.current.preferences.custom.aws_s3_secretaccesskey, "PUT\n\n\n" + n +"\n/" + bucketName + "/?versioning");
+	httpClient.setRequestHeader('Authorization', auth);
+	httpClient.setRequestHeader('Date', n);
+	httpClient.open('PUT', bucketName + '.s3.amazonaws.com?versioning');
+	
+	httpClient.send("<VersioningConfiguration xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">\n<Status>" + (allowVersioning ? "Enabled" : "Suspended") + "</Status>\n</VersioningConfiguration>");
+}
+
+
+function createFolder(bucketName, path) {
+	importScript("hmacsha1.ds");
+	
+	if(!strEndsWith(path, "/"))
+		path = path + "/";
+	
+	var httpClient : dw.net.HTTPClient = new dw.net.HTTPClient();	
+	var d=new Date();
+	var n=d.toUTCString();
+	var auth : String =  "AWS " + dw.system.Site.current.preferences.custom.aws_s3_accesskeyid + ":" + b64_hmac_sha1(dw.system.Site.current.preferences.custom.aws_s3_secretaccesskey, "PUT\n\n\n" + n +"\n/" + bucketName + path);
+	httpClient.setRequestHeader('Authorization', auth);
+	httpClient.setRequestHeader('Date', n);
+	httpClient.open('PUT', bucketName + '.s3.amazonaws.com' + path);
+	
+	httpClient.send();
+	var y = httpClient;
+}
+
+function getBucket(bucketName) {
+	return getBucket(bucketName, '/');
+}
+
+function getBucket(bucketName, path) {	
+	importScript("hmacsha1.ds");
+	
+	if(path == null || path.length == 0)
+		path = '/';
+	
+	var httpClient : dw.net.HTTPClient = new dw.net.HTTPClient();
+	var message : String;
+	var d=new Date();
+	var n=d.toUTCString();
+	var auth : String =  "AWS " + dw.system.Site.current.preferences.custom.aws_s3_accesskeyid + ":" + b64_hmac_sha1(dw.system.Site.current.preferences.custom.aws_s3_secretaccesskey, "GET\n\n\n" + n +"\n/" + bucketName + path);
+	httpClient.setRequestHeader('Authorization', auth);
+	httpClient.setRequestHeader('Date', n);
+	httpClient.open('GET', bucketName + '.s3.amazonaws.com');
+	httpClient.send();
+	
+	var bucketXML : XML = new XML(removeDefaultNamespaceFromXML(httpClient.text));
+
+	var t = bucketXML.Contents.length();
+	
+	var fs : dw.util.ArrayList = new dw.util.ArrayList();	
+	
+	for(i=0;i<bucketXML.Contents.length();i++) {			
+		var awsItem = bucketXML.Contents[i];
+		
+		var item = {};
+		
+		var fParts = awsItem.Key.toString().split('/');
+		var currentFolder = fs;
+		for(var j=0;j<fParts.length-1;j++) {
+			var p = fParts[j];
+			if(p != null && p.length > 0) {
+				currentFolder = findChildFolder(currentFolder, p).children;
+			}
+		}
+
+		if(!strEndsWith(awsItem.Key.toString(), '/')) 
+		{			
+			item.isFolder = false;
+			item.name = fParts[fParts.length-1];
+			item.size = awsItem.Size;
+			currentFolder.add(item);
+		}
+	}
+
+  	return fs;
+}
+
+function findChildFolder(fs : dw.util.ArrayList, folder) {
+	var found = false;
+	for each(var f in fs) {		
+		if(f.isFolder && f.name == folder) {
+			return f;
+		}
+	}
+	
+	//not found
+	var item = {};
+	item.children = new dw.util.ArrayList();
+	item.name = folder;
+	item.isFolder = true;
+	item.size = 0;
+	fs.add(item);
+	return item;
+} 
+
+function addBucket(bucketName) {	
+	importScript("hmacsha1.ds");
+	
+	var httpClient : dw.net.HTTPClient = new dw.net.HTTPClient();
+	var message : String;
+	var d=new Date();
+	var n=d.toUTCString();
+	var auth : String =  "AWS " + dw.system.Site.current.preferences.custom.aws_s3_accesskeyid + ":" + b64_hmac_sha1(dw.system.Site.current.preferences.custom.aws_s3_secretaccesskey, "PUT\n\n\n" + n +"\n/"+bucketName+"/");
+	httpClient.setRequestHeader('Date', n);
+	httpClient.setRequestHeader('Authorization', auth);	
+	httpClient.open('PUT', bucketName + '.s3.amazonaws.com');
+	httpClient.send();
+
+	if(httpClient.errorText != null)
+		throw (new XML(httpClient.errorText)).Message.toString();
+}
